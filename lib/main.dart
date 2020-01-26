@@ -49,10 +49,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           value: _studentName,
           icon: Icon(Icons.person),
           onChanged: (String v) {
-            setState(() {
-              debugPrint("Student name set to $v");
-              _studentName = v;
-            });
+            debugPrint("Student name set to $v");
+            _studentName = v;
           },
           items: _studentNameList.map((student) {
             return DropdownMenuItem(
@@ -74,10 +72,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           value: _team,
           icon: Icon(Icons.device_hub),
           onChanged: (String v) {
-            setState(() {
-              debugPrint("Team set to $v");
-              _team = v;
-            });
+            debugPrint("Team set to $v");
+            _team = v;
           },
           items: _teamList.map((team) {
             return DropdownMenuItem(
@@ -92,12 +88,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    // This method is rerun every time setState is called.
+    // It's like magic.  OoOoOo!
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
