@@ -40,6 +40,56 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   var _studentNameList = <String>['Justin', 'Morrie', 'David', 'Kyle'];
   var _teamList = <String>['3141', '5926', '5358', '7958'];
 
+  Widget buildStudentSelector(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        Text('Who are you?'),
+        DropdownButton(
+          value: _studentName,
+          icon: Icon(Icons.person),
+          onChanged: (String v) {
+            setState(() {
+              debugPrint("Student name set to $v");
+              _studentName = v;
+            });
+          },
+          items: _studentNameList.map((student) {
+            return DropdownMenuItem(
+              value: student,
+              child: Text(student),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget buildTeamSelector(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        Text('Who are they?'),
+        DropdownButton(
+          value: _team,
+          icon: Icon(Icons.device_hub),
+          onChanged: (String v) {
+            setState(() {
+              debugPrint("Team set to $v");
+              _team = v;
+            });
+          },
+          items: _teamList.map((team) {
+            return DropdownMenuItem(
+              value: team,
+              child: Text(team),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -57,50 +107,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Text('Who are you?'),
-                DropdownButton(
-                  value: _studentName,
-                  icon: Icon(Icons.person),
-                  onChanged: (String v) {
-                    setState(() {
-                      debugPrint("Student name set to $v");
-                      _studentName = v;
-                    });
-                  },
-                  items: _studentNameList.map((student) {
-                    return DropdownMenuItem(
-                      value: student,
-                      child: Text(student),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                Text('Who are they?'),
-                DropdownButton(
-                  value: _team,
-                  icon: Icon(Icons.device_hub),
-                  onChanged: (String v) {
-                    setState(() {
-                      debugPrint("Team set to $v");
-                      _team = v;
-                    });
-                  },
-                  items: _teamList.map((team) {
-                    return DropdownMenuItem(
-                      value: team,
-                      child: Text(team),
-                    );
-                  }).toList(),
-                ),
-              ],
-            )
+            buildStudentSelector(context),
+            buildTeamSelector(context),
           ],
         ),
       ),
