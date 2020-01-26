@@ -54,40 +54,53 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            DropdownButton(
-              value: _studentName,
-              icon: Icon(Icons.person),
-              onChanged: (String v) {
-                setState(() {
-                  debugPrint("Student name set to $v");
-                  _studentName = v;
-                });
-              },
-              items: _studentNameList.map((student) {
-                return DropdownMenuItem(
-                  value: student,
-                  child: Text(student),
-                );
-              }).toList(),
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Text('Who are you?'),
+                DropdownButton(
+                  value: _studentName,
+                  icon: Icon(Icons.person),
+                  onChanged: (String v) {
+                    setState(() {
+                      debugPrint("Student name set to $v");
+                      _studentName = v;
+                    });
+                  },
+                  items: _studentNameList.map((student) {
+                    return DropdownMenuItem(
+                      value: student,
+                      child: Text(student),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
-            DropdownButton(
-              value: _team,
-              icon: Icon(Icons.device_hub),
-              onChanged: (String v) {
-                setState(() {
-                  debugPrint("Team set to $v");
-                  _team = v;
-                });
-              },
-              items: _teamList.map((team) {
-                return DropdownMenuItem(
-                  value: team,
-                  child: Text(team),
-                );
-              }).toList(),
-            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Text('Who are they?'),
+                DropdownButton(
+                  value: _team,
+                  icon: Icon(Icons.device_hub),
+                  onChanged: (String v) {
+                    setState(() {
+                      debugPrint("Team set to $v");
+                      _team = v;
+                    });
+                  },
+                  items: _teamList.map((team) {
+                    return DropdownMenuItem(
+                      value: team,
+                      child: Text(team),
+                    );
+                  }).toList(),
+                ),
+              ],
+            )
           ],
         ),
       ),
