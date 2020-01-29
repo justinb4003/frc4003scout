@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() => runApp(FRC4003ScoutApp());
+
+
+class Match {
+  int blue1;
+  int blue2;
+  int blue3;
+
+  Match.fromSnapshot(DocumentSnapshot snapshot)
+  : blue1 = snapshot['blue1'],
+    blue2 = snapshot['blue2'],
+    blue3 = snapshot['blue3'];
+}
 
 class FRC4003ScoutApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -37,89 +50,141 @@ class ScoutHomePage extends StatefulWidget {
 class _ScoutHomePageState extends State<ScoutHomePage> {
   String _studentName;
   String _team;
+  String _matchName;
   bool _controller = false;
   bool _crossedHABLine = false;
 
-  /* Magic strings everywhere but... we can fix this at a later date */
-  var _studentNameList = <String>['', 'Justin', 'Morrie', 'David', 'Kyle'];
-  var _teamList = <String>['', '3141', '5926', '5358', '7958'];
-  /* Soon
-  var _startLocationList = <String>['Left', 'Center', 'Right'];
-  var _startHabLevelList = <String>['None', '1', '2'];
-  var _rocketLevelList = <int>[0, 1, 2, 3];
-  var _habLevelEndList = <String>['None', '0', '1', '2', '3'];
-  var _liftOthersList = <String>['None', '0', '1', '2'];
-  */
-
   Widget buildStudentSelector(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        Text('Who are you?'),
-        DropdownButton(
-          value: _studentName,
-          icon: Icon(Icons.person),
-          onChanged: (String v) {
-            debugPrint("Student name set to $v");
-            setState(() {
-              _studentName = v;
-            });
-          },
-          items: _studentNameList.map((student) {
-            return DropdownMenuItem(
-              value: student,
-              child: Text(student),
-            );
-          }).toList(),
-        ),
-      ],
-    );
+    return StreamBuilder(
+        stream: Firestore.instance.collection('students').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return LinearProgressIndicator();
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              Text('Who are you?'),
+              DropdownButton(
+                value: _studentName,
+                icon: Icon(Icons.person),
+                onChanged: (String v) {
+                  debugPrint("Student name set to $v");
+                  setState(() {
+                    _studentName = v;
+                  });
+                },
+                items: snapshot.data.documents
+                    .map<DropdownMenuItem<String>>((student) {
+                  return DropdownMenuItem<String>(
+                    value: student['name'],
+                    child: Text(student['name']),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        });
+  }
+
+  Widget buildMatchSelector(BuildContext context) {
+    /* 
+     * JJB: 
+     * Part of me says this should be selectable and part of me says this might
+     * as well be baked into the app to make really sure everybody is running
+     * the proper version and nobody can possibly get confused and select the
+     * wrong week.context
+     * It's not lazy programming.  I thought this through. 
+     */
+    return StreamBuilder(
+        stream: Firestore.instance
+            .collection('competitions')
+            .document('2020')
+            .collection('stjoe')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return LinearProgressIndicator();
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: <Widget>[
+              Text('Which match?'),
+              DropdownButton(
+                value: _matchName,
+                icon: Icon(Icons.map),
+                onChanged: (String v) {
+                  debugPrint("Match name set to $v");
+                  setState(() {
+                    _matchName = v;
+                  });
+                },
+                items:
+                    snapshot.data.documents.map<DropdownMenuItem<String>>((d) {
+                  return DropdownMenuItem<String>(
+                    value: d.documentID,
+                    child: Text(d.documentID),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        });
+  }
+
+  Widget buildTeamDropdown(BuildContext context, Match data) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          Text('Who are they?'),
+          DropdownButton(
+            value: _team,
+            icon: Icon(Icons.device_hub),
+            onChanged: (String v) {
+              setState(() {
+                _team = v;
+              });
+              debugPrint("Team set to $v");
+            },
+            items:
+              <DropdownMenuItem<String>>[
+                DropdownMenuItem<String>(
+                  value: data.blue1.toString(),
+                  child: Text(data.blue1.toString()),
+                ),
+                DropdownMenuItem<String>(
+                  value: data.blue2.toString(),
+                  child: Text(data.blue2.toString()),
+                ),
+                DropdownMenuItem<String>(
+                  value: data.blue3.toString(),
+                  child: Text(data.blue3.toString()),
+                ),
+              ],
+          ),
+        ],
+      );
   }
 
   Widget buildTeamSelector(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        Text('Who are they?'),
-        DropdownButton(
-          value: _team,
-          icon: Icon(Icons.device_hub),
-          onChanged: (String v) {
-            setState(() {
-              _team = v;
-            });
-            debugPrint("Team set to $v");
-          },
-          items: _teamList.map((team) {
-            return DropdownMenuItem(
-              value: team,
-              child: Text(team),
-            );
-          }).toList(),
-        ),
-      ],
+    if (_matchName == null || _matchName.length == 0) {
+      return LinearProgressIndicator();
+    }
+    debugPrint("Loading teams for $_matchName");
+    return StreamBuilder(
+      stream: Firestore.instance
+          .collection('competitions')
+          .document('2020')
+          .collection('stjoe')
+          .document(_matchName)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return LinearProgressIndicator();
+        }
+        return buildTeamDropdown(context, Match.fromSnapshot(snapshot.data));
+      },
     );
-  }
-
-  void rebuildTeamList() async {
-    setState(() {
-      _teamList = <String>['', '4004', '254', '76', '238'];
-      if (!_teamList.contains(_team)) {
-        _team = _teamList[0];
-      }
-    });
-  }
-
-  void rebuildStudentList() async {
-    debugPrint('Rebuilding student list has begun.');
-    setState(() {
-      _studentNameList = <String>['', 'Chad', 'Justin', 'Morrie', 'David', 'Kyle'];
-      if (!_studentNameList.contains(_studentName)) {
-        // We've selected an item no longer in the list
-        // Default to the first one for lack of a better choice
-        _studentName = _studentNameList[0];
-      }
-    });
   }
 
   /* 
@@ -135,10 +200,25 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       children: <Widget>[
         RaisedButton(
           onPressed: () {
+            /*
             rebuildTeamList();
             rebuildStudentList();
+            */
           },
           child: Text("Grab External Data"),
+        ),
+        RaisedButton(
+          onPressed: () {
+            // This will repeatedly add new records with the same data if done by itself.
+            // Firestore.instance.collection('scoutresults2020').add({'match_id': 'JB-TEST-01', 'autoline': false});
+            Firestore.instance
+                .collection('scoutresults')
+                .document('2020')
+                .collection('stjoe')
+                .document('match_001')
+                .updateData({'auto_line': true});
+          },
+          child: Text("Create fake result"),
         )
       ],
     );
@@ -191,7 +271,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called and setState detects a
-    // change warrants a rebuild of the UI.
+    // change that warrants a rebuild of the UI.
     // It's like magic.  OoOoOo!
     return Scaffold(
       appBar: AppBar(
@@ -203,6 +283,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             buildStudentSelector(context),
+            buildMatchSelector(context),
             buildTeamSelector(context),
             buildExampleButtons(context),
             buildSandstorm(context),

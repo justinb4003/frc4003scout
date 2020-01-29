@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "555916507406",
+    "firebase_url": "https://frc4003scout.firebaseio.com",
+    "project_id": "frc4003scout",
+    "storage_bucket": "frc4003scout.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555916507406:android:87a38a345487cdcdf2ff5f",
+        "android_client_info": {
+          "package_name": "com.allendalerobotics.frc4003scout"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "555916507406-h1e3bpr3lp65b1v1ag5tk7jobu2mromt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnGRqAKFkKQK5EosDkPPTSd5tY5Nr1-lA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "555916507406-h1e3bpr3lp65b1v1ag5tk7jobu2mromt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
