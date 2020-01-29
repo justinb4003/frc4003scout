@@ -4,14 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 void main() => runApp(FRC4003ScoutApp());
 
 class Student {
-  String key;
-  String name;
-  Student(key, name)
-      : this.key = key,
-        this.name = name;
-  Student.fromSnapshot(DocumentSnapshot snapshot) :
-    key = snapshot.documentID,
-    name = snapshot['name'];
+  final String key;
+  final String name;
+  Student(this.key, this.name);
+  Student.fromSnapshot(DocumentSnapshot snapshot)
+      : key = snapshot.documentID,
+        name = snapshot['name'];
+
+  // JJB: you need to override this or the DropDown controls flip out about
+  // having 0 or 2+ possible items for any value.
+  bool operator ==(Object other) => other is Student && other.key == key;
 }
 
 class Match {
@@ -94,9 +96,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
               Text('Who are you?'),
-              DropdownButton(
+              DropdownButton<Student>(
                 value: _studentObj,
-                icon: Icon(Icons.person),
                 onChanged: (Student v) {
                   debugPrint("Student key set to ${v.key}");
                   debugPrint("Student name set to ${v.name}");
@@ -104,11 +105,13 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
                     _studentObj = v;
                   });
                 },
-                items: snapshot.data.documents.map<DropdownMenuItem<Student>>((doc) {
-                  Student stu = Student.fromSnapshot(doc);
+                items:
+                    snapshot.data.documents.map<DropdownMenuItem<Student>>((d) {
+                  debugPrint("Student documentID dump: ${d.documentID}");
+                  debugPrint("Student name dump: ${d['name']}");
                   return DropdownMenuItem<Student>(
-                    value: stu,
-                    child: Text(stu.name),
+                    value: Student(d.documentID, d['name']),
+                    child: Text(d['name']),
                   );
                 }).toList(),
               ),
@@ -305,10 +308,12 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       return CircularProgressIndicator();
     }
     // Bootstrap the DB with default data to work with
-    var doc = Firestore.instance
-        .collection('scoutresults')
-        .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
-        .setData({'student_name': _studentObj.name}, merge: true);
+    if (_studentObj.name != null) {
+      Firestore.instance
+          .collection('scoutresults')
+          .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+          .setData({'student_name': _studentObj.name}, merge: true);
+    }
 
     return StreamBuilder(
         stream: Firestore.instance
