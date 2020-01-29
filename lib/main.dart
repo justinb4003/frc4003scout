@@ -7,13 +7,10 @@ class Student {
   final String key;
   final String name;
   Student(this.key, this.name);
-  Student.fromSnapshot(DocumentSnapshot snapshot)
-      : key = snapshot.documentID,
-        name = snapshot['name'];
-
   // JJB: you need to override this or the DropDown controls flip out about
   // having 0 or 2+ possible items for any value.
   bool operator ==(Object other) => other is Student && other.key == key;
+  int get hashCode => key.hashCode;
 }
 
 class Match {
