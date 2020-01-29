@@ -23,14 +23,15 @@ class Match {
 }
 
 class ScoutResult {
-  String scoutName;
-  String teamNumber;
-  bool autoLine;
+  bool autoLine = false;
+  int autoPortBottom = 0;
 
   ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
-      : scoutName = snapshot['scout_name'],
-        teamNumber = snapshot['team_number'],
-        autoLine = snapshot['auto_line'];
+      : autoLine =
+            snapshot['auto_line'] == null ? false : snapshot['auto_line'],
+        autoPortBottom = snapshot['auto_port_bottom'] == null
+            ? 0
+            : snapshot['auto_port_bottom'];
 }
 
 class FRC4003ScoutApp extends StatelessWidget {
@@ -280,16 +281,25 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   Widget build2020ScoutingStream(BuildContext context) {
-    if (_matchName == null || _matchName.length == 0) {
+    if (_matchName == null ||
+        _matchName.length == 0 ||
+        _team == null ||
+        _team.length == 0) {
       return CircularProgressIndicator();
     }
+    // Bootstrap the DB with default data to work with
+    var doc = Firestore.instance
+        .collection('scoutresults')
+        .document("$_compYear:$_matchName:$_team:$_studentKey")
+        .setData({}, merge: true);
+
     return StreamBuilder(
         stream: Firestore.instance
             .collection('scoutresults')
             .document("$_compYear:$_matchName:$_team:$_studentKey")
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData || snapshot.data == null) {
             return LinearProgressIndicator();
           }
           return build2020ScoutingWidgets(
