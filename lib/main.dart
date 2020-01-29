@@ -3,8 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() => runApp(FRC4003ScoutApp());
 
-// TODO: Switch back to String. We're not doing any manipulation on the team
-// numbers as ints.
+class Student {
+  String key;
+  String name;
+  Student(key, name)
+      : this.key = key,
+        this.name = name;
+  Student.fromSnapshot(DocumentSnapshot snapshot) :
+    key = snapshot.documentID,
+    name = snapshot['name'];
+}
+
 class Match {
   String blue1;
   String blue2;
@@ -67,7 +76,7 @@ class ScoutHomePage extends StatefulWidget {
 }
 
 class _ScoutHomePageState extends State<ScoutHomePage> {
-  String _studentKey;
+  Student _studentObj;
   String _team;
   String _matchName;
   String _compName = 'stjoe';
@@ -86,19 +95,20 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             children: <Widget>[
               Text('Who are you?'),
               DropdownButton(
-                value: _studentKey,
+                value: _studentObj,
                 icon: Icon(Icons.person),
-                onChanged: (String v) {
-                  debugPrint("Student key set to $v");
+                onChanged: (Student v) {
+                  debugPrint("Student key set to ${v.key}");
+                  debugPrint("Student name set to ${v.name}");
                   setState(() {
-                    _studentKey = v;
+                    _studentObj = v;
                   });
                 },
-                items: snapshot.data.documents
-                    .map<DropdownMenuItem<String>>((student) {
-                  return DropdownMenuItem<String>(
-                    value: student.documentID,
-                    child: Text(student['name']),
+                items: snapshot.data.documents.map<DropdownMenuItem<Student>>((doc) {
+                  Student stu = Student.fromSnapshot(doc);
+                  return DropdownMenuItem<Student>(
+                    value: stu,
+                    child: Text(stu.name),
                   );
                 }).toList(),
               ),
@@ -168,28 +178,28 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           },
           items: <DropdownMenuItem<String>>[
             DropdownMenuItem<String>(
-              value: data.blue1.toString(),
-              child: Text(data.blue1.toString()),
+              value: data.blue1,
+              child: Text(data.blue1),
             ),
             DropdownMenuItem<String>(
-              value: data.blue2.toString(),
-              child: Text(data.blue2.toString()),
+              value: data.blue2,
+              child: Text(data.blue2),
             ),
             DropdownMenuItem<String>(
-              value: data.blue3.toString(),
-              child: Text(data.blue3.toString()),
+              value: data.blue3,
+              child: Text(data.blue3),
             ),
             DropdownMenuItem<String>(
-              value: data.red1.toString(),
-              child: Text(data.red1.toString()),
+              value: data.red1,
+              child: Text(data.red1),
             ),
             DropdownMenuItem<String>(
-              value: data.red2.toString(),
-              child: Text(data.red2.toString()),
+              value: data.red2,
+              child: Text(data.red2),
             ),
             DropdownMenuItem<String>(
-              value: data.red3.toString(),
-              child: Text(data.red3.toString()),
+              value: data.red3,
+              child: Text(data.red3),
             ),
           ],
         ),
@@ -219,6 +229,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   Widget buildAutoLine(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
@@ -228,7 +241,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             setState(() {
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:$_studentKey")
+                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
                   .updateData({'auto_line': b});
             });
           },
@@ -239,6 +252,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   Widget buildAutoPortBottom(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
@@ -251,7 +267,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               });
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:$_studentKey")
+                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
                   .updateData({'auto_port_bottom': _autoPortBottomScore});
             }),
         Text(_autoPortBottomScore.toString()),
@@ -263,7 +279,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               });
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:$_studentKey")
+                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
                   .updateData({'auto_port_bottom': _autoPortBottomScore});
             }),
       ],
@@ -284,19 +300,20 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     if (_matchName == null ||
         _matchName.length == 0 ||
         _team == null ||
-        _team.length == 0) {
+        _team.length == 0 ||
+        _studentObj == null) {
       return CircularProgressIndicator();
     }
     // Bootstrap the DB with default data to work with
     var doc = Firestore.instance
         .collection('scoutresults')
-        .document("$_compYear:$_matchName:$_team:$_studentKey")
-        .setData({}, merge: true);
+        .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+        .setData({'student_name': _studentObj.name}, merge: true);
 
     return StreamBuilder(
         stream: Firestore.instance
             .collection('scoutresults')
-            .document("$_compYear:$_matchName:$_team:$_studentKey")
+            .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData || snapshot.data == null) {
