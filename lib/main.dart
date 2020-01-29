@@ -66,7 +66,7 @@ class ScoutHomePage extends StatefulWidget {
 }
 
 class _ScoutHomePageState extends State<ScoutHomePage> {
-  String _studentName;
+  String _studentKey;
   String _team;
   String _matchName;
   String _compName = 'stjoe';
@@ -85,18 +85,18 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             children: <Widget>[
               Text('Who are you?'),
               DropdownButton(
-                value: _studentName,
+                value: _studentKey,
                 icon: Icon(Icons.person),
                 onChanged: (String v) {
-                  debugPrint("Student name set to $v");
+                  debugPrint("Student key set to $v");
                   setState(() {
-                    _studentName = v;
+                    _studentKey = v;
                   });
                 },
                 items: snapshot.data.documents
                     .map<DropdownMenuItem<String>>((student) {
                   return DropdownMenuItem<String>(
-                    value: student['name'],
+                    value: student.documentID,
                     child: Text(student['name']),
                   );
                 }).toList(),
@@ -227,9 +227,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             setState(() {
               Firestore.instance
                   .collection('scoutresults')
-                  .document(_compYear)
-                  .collection(_compName)
-                  .document(_matchName)
+                  .document("$_compYear:$_matchName:$_team:$_studentKey")
                   .updateData({'auto_line': b});
             });
           },
@@ -252,9 +250,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               });
               Firestore.instance
                   .collection('scoutresults')
-                  .document(_compYear)
-                  .collection(_compName)
-                  .document(_matchName)
+                  .document("$_compYear:$_matchName:$_team:$_studentKey")
                   .updateData({'auto_port_bottom': _autoPortBottomScore});
             }),
         Text(_autoPortBottomScore.toString()),
@@ -266,9 +262,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               });
               Firestore.instance
                   .collection('scoutresults')
-                  .document(_compYear)
-                  .collection(_compName)
-                  .document(_matchName)
+                  .document("$_compYear:$_matchName:$_team:$_studentKey")
                   .updateData({'auto_port_bottom': _autoPortBottomScore});
             }),
       ],
@@ -292,9 +286,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     return StreamBuilder(
         stream: Firestore.instance
             .collection('scoutresults')
-            .document(_compYear)
-            .collection(_compName)
-            .document(_matchName)
+            .document("$_compYear:$_matchName:$_team:$_studentKey")
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
