@@ -187,48 +187,11 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
-  /* 
-   * This method just shows how you can kick off methods that result in changes
-   * to member variables which trigger a redraw of UI elements. It's a pretty
-   * slick way of letting async calls out to external data sources play nicely.
-   * There's no figuring out when to redraw or mark things dirty. The 'junk' is
-   * just sort of handled nicely in the background.
-   */
-  Widget buildExampleButtons(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        RaisedButton(
-          onPressed: () {
-            /*
-            rebuildTeamList();
-            rebuildStudentList();
-            */
-          },
-          child: Text("Grab External Data"),
-        ),
-        RaisedButton(
-          onPressed: () {
-            // This will repeatedly add new records with the same data if done by itself.
-            // Firestore.instance.collection('scoutresults2020').add({'match_id': 'JB-TEST-01', 'autoline': false});
-            Firestore.instance
-                .collection('scoutresults')
-                .document('2020')
-                .collection('stjoe')
-                .document('match_001')
-                .updateData({'auto_line': true});
-          },
-          child: Text("Create fake result"),
-        )
-      ],
-    );
-  }
-
-  Widget buildControllerPrompt(BuildContext context) {
+  Widget buildAutoLine(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
-        Text('Controller?'),
+        Text('Moved off auto line?'),
         Switch(
           onChanged: (bool b) {
             setState(() {
@@ -241,11 +204,11 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
-  Widget buildHABLinePrompt(BuildContext context) {
+  Widget buildAutoPowercells(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
-        Text('Crossed HAB line??'),
+        Text('Power cells bottom'),
         Switch(
           onChanged: (bool b) {
             setState(() {
@@ -258,11 +221,11 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
-  Widget buildSandstorm(BuildContext context) {
+  Widget buildAutoWidgets(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
-        buildControllerPrompt(context),
+        buildAutoLine(context),
         buildHABLinePrompt(context),
       ],
     );
@@ -285,8 +248,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             buildStudentSelector(context),
             buildMatchSelector(context),
             buildTeamSelector(context),
-            buildExampleButtons(context),
-            buildSandstorm(context),
+            buildAutoWidgets(context),
           ],
         ),
       ),
