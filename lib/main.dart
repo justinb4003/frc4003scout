@@ -3,16 +3,34 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() => runApp(FRC4003ScoutApp());
 
-
+// TODO: Switch back to String. We're not doing any manipulation on the team
+// numbers as ints.
 class Match {
-  int blue1;
-  int blue2;
-  int blue3;
+  String blue1;
+  String blue2;
+  String blue3;
+  String red1;
+  String red2;
+  String red3;
 
   Match.fromSnapshot(DocumentSnapshot snapshot)
-  : blue1 = snapshot['blue1'],
-    blue2 = snapshot['blue2'],
-    blue3 = snapshot['blue3'];
+      : blue1 = snapshot['blue1'],
+        blue2 = snapshot['blue2'],
+        blue3 = snapshot['blue3'],
+        red1 = snapshot['red1'],
+        red2 = snapshot['red2'],
+        red3 = snapshot['red3'];
+}
+
+class ScoutResult {
+  String scoutName;
+  String teamNumber;
+  bool autoLine;
+
+  ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
+      : scoutName = snapshot['scout_name'],
+        teamNumber = snapshot['team_number'],
+        autoLine = snapshot['auto_line'];
 }
 
 class FRC4003ScoutApp extends StatelessWidget {
@@ -51,8 +69,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   String _studentName;
   String _team;
   String _matchName;
-  bool _controller = false;
-  bool _crossedHABLine = false;
+  String _compName = 'stjoe';
+  String _compYear = '2020';
+  int _autoPortBottomScore = 0;
 
   Widget buildStudentSelector(BuildContext context) {
     return StreamBuilder(
@@ -99,8 +118,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     return StreamBuilder(
         stream: Firestore.instance
             .collection('competitions')
-            .document('2020')
-            .collection('stjoe')
+            .document(_compYear)
+            .collection(_compName)
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
@@ -133,40 +152,51 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   Widget buildTeamDropdown(BuildContext context, Match data) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          Text('Who are they?'),
-          DropdownButton(
-            value: _team,
-            icon: Icon(Icons.device_hub),
-            onChanged: (String v) {
-              setState(() {
-                _team = v;
-              });
-              debugPrint("Team set to $v");
-            },
-            items:
-              <DropdownMenuItem<String>>[
-                DropdownMenuItem<String>(
-                  value: data.blue1.toString(),
-                  child: Text(data.blue1.toString()),
-                ),
-                DropdownMenuItem<String>(
-                  value: data.blue2.toString(),
-                  child: Text(data.blue2.toString()),
-                ),
-                DropdownMenuItem<String>(
-                  value: data.blue3.toString(),
-                  child: Text(data.blue3.toString()),
-                ),
-              ],
-          ),
-        ],
-      );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        Text('Who are they?'),
+        DropdownButton(
+          value: _team,
+          icon: Icon(Icons.device_hub),
+          onChanged: (String v) {
+            setState(() {
+              _team = v;
+            });
+            debugPrint("Team set to $v");
+          },
+          items: <DropdownMenuItem<String>>[
+            DropdownMenuItem<String>(
+              value: data.blue1.toString(),
+              child: Text(data.blue1.toString()),
+            ),
+            DropdownMenuItem<String>(
+              value: data.blue2.toString(),
+              child: Text(data.blue2.toString()),
+            ),
+            DropdownMenuItem<String>(
+              value: data.blue3.toString(),
+              child: Text(data.blue3.toString()),
+            ),
+            DropdownMenuItem<String>(
+              value: data.red1.toString(),
+              child: Text(data.red1.toString()),
+            ),
+            DropdownMenuItem<String>(
+              value: data.red2.toString(),
+              child: Text(data.red2.toString()),
+            ),
+            DropdownMenuItem<String>(
+              value: data.red3.toString(),
+              child: Text(data.red3.toString()),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
-  Widget buildTeamSelector(BuildContext context) {
+  Widget buildTeamStream(BuildContext context) {
     if (_matchName == null || _matchName.length == 0) {
       return LinearProgressIndicator();
     }
@@ -174,8 +204,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     return StreamBuilder(
       stream: Firestore.instance
           .collection('competitions')
-          .document('2020')
-          .collection('stjoe')
+          .document(_compYear)
+          .collection(_compName)
           .document(_matchName)
           .snapshots(),
       builder: (context, snapshot) {
@@ -187,7 +217,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
-  Widget buildAutoLine(BuildContext context) {
+  Widget buildAutoLine(BuildContext context, ScoutResult sr) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
@@ -195,40 +225,84 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         Switch(
           onChanged: (bool b) {
             setState(() {
-              _controller = b;
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(_compYear)
+                  .collection(_compName)
+                  .document(_matchName)
+                  .updateData({'auto_line': b});
             });
           },
-          value: _controller,
+          value: sr.autoLine,
         )
       ],
     );
   }
 
-  Widget buildAutoPowercells(BuildContext context) {
+  Widget buildAutoPortBottom(BuildContext context, ScoutResult sr) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
-        Text('Power cells bottom'),
-        Switch(
-          onChanged: (bool b) {
-            setState(() {
-              _crossedHABLine = b;
-            });
-          },
-          value: _crossedHABLine,
-        )
+        Text('Auto bottom port score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              setState(() {
+                _autoPortBottomScore--;
+              });
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(_compYear)
+                  .collection(_compName)
+                  .document(_matchName)
+                  .updateData({'auto_port_bottom': _autoPortBottomScore});
+            }),
+        Text(_autoPortBottomScore.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              setState(() {
+                _autoPortBottomScore++;
+              });
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(_compYear)
+                  .collection(_compName)
+                  .document(_matchName)
+                  .updateData({'auto_port_bottom': _autoPortBottomScore});
+            }),
       ],
     );
   }
 
-  Widget buildAutoWidgets(BuildContext context) {
+  Widget build2020ScoutingWidgets(BuildContext context, ScoutResult sr) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: <Widget>[
-        buildAutoLine(context),
-        buildHABLinePrompt(context),
+        buildAutoLine(context, sr),
+        buildAutoPortBottom(context, sr),
       ],
     );
+  }
+
+  Widget build2020ScoutingStream(BuildContext context) {
+    if (_matchName == null || _matchName.length == 0) {
+      return CircularProgressIndicator();
+    }
+    return StreamBuilder(
+        stream: Firestore.instance
+            .collection('scoutresults')
+            .document(_compYear)
+            .collection(_compName)
+            .document(_matchName)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return LinearProgressIndicator();
+          }
+          return build2020ScoutingWidgets(
+              context, ScoutResult.fromSnapshot(snapshot.data));
+        });
   }
 
   @override
@@ -247,8 +321,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           children: <Widget>[
             buildStudentSelector(context),
             buildMatchSelector(context),
-            buildTeamSelector(context),
-            buildAutoWidgets(context),
+            buildTeamStream(context),
+            build2020ScoutingStream(context),
           ],
         ),
       ),
