@@ -78,6 +78,15 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   Student _studentObj;
   String _team;
   String _matchName;
+
+  /* 
+    * JJB: 
+    * Part of me says this should be selectable and part of me says this might
+    * as well be baked into the app to make really sure everybody is running
+    * the proper version and nobody can possibly get confused and select the
+    * wrong week.context
+    * It's not lazy programming.  I thought this through. 
+    */
   String _compName = 'stjoe';
   String _compYear = '2020';
 
@@ -117,14 +126,6 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   Widget buildMatchSelector(BuildContext context) {
-    /* 
-     * JJB: 
-     * Part of me says this should be selectable and part of me says this might
-     * as well be baked into the app to make really sure everybody is running
-     * the proper version and nobody can possibly get confused and select the
-     * wrong week.context
-     * It's not lazy programming.  I thought this through. 
-     */
     return StreamBuilder(
         stream: Firestore.instance
             .collection('competitions')
