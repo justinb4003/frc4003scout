@@ -80,7 +80,6 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   String _matchName;
   String _compName = 'stjoe';
   String _compYear = '2020';
-  int _autoPortBottomScore = 0;
 
   Widget buildStudentSelector(BuildContext context) {
     return StreamBuilder(
@@ -262,25 +261,19 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         IconButton(
             icon: Icon(Icons.remove),
             onPressed: () {
-              setState(() {
-                _autoPortBottomScore--;
-              });
               Firestore.instance
                   .collection('scoutresults')
                   .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
-                  .updateData({'auto_port_bottom': _autoPortBottomScore});
+                  .updateData({'auto_port_bottom': --sr.autoPortBottom});
             }),
-        Text(_autoPortBottomScore.toString()),
+        Text(sr.autoPortBottom.toString()),
         IconButton(
             icon: Icon(Icons.add),
             onPressed: () {
-              setState(() {
-                _autoPortBottomScore++;
-              });
               Firestore.instance
                   .collection('scoutresults')
                   .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
-                  .updateData({'auto_port_bottom': _autoPortBottomScore});
+                  .updateData({'auto_port_bottom': ++sr.autoPortBottom});
             }),
       ],
     );
