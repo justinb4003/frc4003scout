@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'drawer.dart';
+import 'results.dart';
 
 void main() => runApp(FRC4003ScoutApp());
 
@@ -195,7 +197,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
                   setState(() {
                     _teamObj = v;
                   });
-                  bool mb = await checkResultsDocumentExists(getCurrDocumentID());
+                  bool mb =
+                      await checkResultsDocumentExists(getCurrDocumentID());
                   setState(() {
                     _matchBegun = mb;
                   });
@@ -371,6 +374,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     // change that warrants a rebuild of the UI.
     // It's like magic.  OoOoOo!
     return Scaffold(
+      drawer: buildAppDrawer(context),
       appBar: AppBar(
         title: Text(widget.title),
       ),
