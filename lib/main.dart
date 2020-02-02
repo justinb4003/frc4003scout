@@ -17,7 +17,7 @@ class Student {
   ... because that happens so often you sometimes find shortcuts for it.  This is Dart's.
   */
   Student(this.key, this.name);
-  
+
   // JJB: you need to override this or the DropDown controls flip out about
   // having 0 or 2+ possible items for any value.
   bool operator ==(Object other) => other is Student && other.key == key;
@@ -37,7 +37,8 @@ class Team {
       : teamNumber = snapshot.documentID,
         teamName = snapshot['team_name'],
         schoolName = snapshot['school_name'];
-  bool operator ==(Object other) => other is Team && other.teamNumber == teamNumber;
+  bool operator ==(Object other) =>
+      other is Team && other.teamNumber == teamNumber;
   int get hashCode => teamNumber.hashCode;
 }
 
@@ -110,6 +111,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   Student _studentObj;
   Team _teamObj;
   String _matchNumber;
+  bool _matchBegun;
 
   /* 
     * JJB: 
@@ -126,8 +128,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   void initState() {
     super.initState();
     _matchNumber = "1";
+    _matchBegun = false;
   }
-  
+
   String getCurrDocumentID() {
     return "$_compYear:${_teamObj.teamNumber}:${_studentObj.key}:$_matchNumber";
   }
@@ -188,9 +191,13 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               Text('Who are they?'),
               DropdownButton<Team>(
                 value: _teamObj,
-                onChanged: (Team v) {
+                onChanged: (Team v) async {
                   setState(() {
                     _teamObj = v;
+                  });
+                  bool mb = await checkResultsDocumentExists(getCurrDocumentID());
+                  setState(() {
+                    _matchBegun = mb;
                   });
                 },
                 items: snapshot.data.documents.map<DropdownMenuItem<Team>>((d) {
@@ -207,6 +214,35 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             ],
           );
         });
+  }
+
+  Widget buildTeamDisplay(BuildContext context) {
+    if (_teamObj != null && _teamObj.teamName.length > 0) {
+      return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[Text('You have selected ${_teamObj.teamName}')]);
+    }
+    return SizedBox.shrink();
+  }
+
+  Widget buildStartButton(BuildContext context) {
+    if (_teamObj != null && _teamObj.teamName.length > 0) {
+      return Visibility(
+          visible: _matchBegun == false,
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                RaisedButton(
+                    child: Text('Begin scouting!'),
+                    onPressed: () {
+                      setState(() {
+                        _matchBegun = true;
+                      });
+                      createScoutResultDocument();
+                    })
+              ]));
+    }
+    return SizedBox.shrink();
   }
 
   Widget buildAutoLine(BuildContext context, ScoutResult sr) {
@@ -231,7 +267,6 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       ],
     );
   }
-
 
   Widget buildAutoPortBottom(BuildContext context, ScoutResult sr) {
     if (_studentObj == null) {
@@ -275,10 +310,21 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
+  Future<bool> checkResultsDocumentExists(String docID) async {
+    final snap = await Firestore.instance
+        .collection('scoutresults')
+        .document(getCurrDocumentID())
+        .get();
+    return snap.exists;
+  }
+
   void createScoutResultDocument() async {
     // Prefixing an async function call with await forces it to await for it to finish.
     // This returns us to a synchronous programming model.
-    final snap = await Firestore.instance.collection('scoutresults').document(getCurrDocumentID()).get();
+    final snap = await Firestore.instance
+        .collection('scoutresults')
+        .document(getCurrDocumentID())
+        .get();
     if (snap.exists) {
       return; // Nothing needs to be done.
     }
@@ -288,10 +334,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       'auto_line': false,
       'auto_port_bottom': 0
     };
-    // And we force the wait on the creation of the document because the app can't
-    // proceed without it being there anyway.
-    // We get a nice exception if we don't await here.
-    await Firestore.instance
+    Firestore.instance
         .collection('scoutresults')
         .document(getCurrDocumentID())
         .setData(d);
@@ -303,12 +346,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         _teamObj == null ||
         _teamObj.teamNumber.length == 0 ||
         _studentObj == null) {
-      return CircularProgressIndicator();
-    }
-
-    if (_studentObj.name != null) {
-      // Bootstrap the DB with default data to work with
-      createScoutResultDocument();
+      return SizedBox.shrink();
     }
 
     return StreamBuilder(
@@ -317,8 +355,10 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             .document(getCurrDocumentID())
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data == null || !snapshot.data.exists) {
-            return LinearProgressIndicator();
+          if (!snapshot.hasData ||
+              snapshot.data == null ||
+              !snapshot.data.exists) {
+            return SizedBox.shrink();
           }
           return build2020ScoutingWidgets(
               context, ScoutResult.fromSnapshot(snapshot.data));
@@ -341,6 +381,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           children: <Widget>[
             buildStudentSelector(context),
             buildTeamSelector(context),
+            buildTeamDisplay(context),
+            buildStartButton(context),
             build2020ScoutingStream(context),
           ],
         ),
