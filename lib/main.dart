@@ -134,7 +134,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   }
 
   String getCurrDocumentID() {
-    return "$_compYear:${_teamObj.teamNumber}:${_studentObj.key}:$_matchNumber";
+    return "$_compYear:$_compName:${_teamObj.teamNumber}:${_studentObj.key}:$_matchNumber";
   }
 
   Widget buildStudentSelector(BuildContext context) {
