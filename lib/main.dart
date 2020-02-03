@@ -1,18 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'drawer.dart';
+import 'results.dart';
 
 void main() => runApp(FRC4003ScoutApp());
 
+/*
+ * Container class that holds data on a student.
+ */
 class Student {
   final String key;
   final String name;
+  /* Dart has an handy constrcutor syntax to handle a common initialization case.  This is the equivalent to:
+  Student(String key, String name) {
+    this.key = key;
+    this.name = name;
+  }
+  ... because that happens so often you sometimes find shortcuts for it.  This is Dart's.
+  */
   Student(this.key, this.name);
+
   // JJB: you need to override this or the DropDown controls flip out about
   // having 0 or 2+ possible items for any value.
   bool operator ==(Object other) => other is Student && other.key == key;
+  // ... and if you override == you should override hashCode
   int get hashCode => key.hashCode;
 }
 
+/*
+ * Container class that holds data on a team.
+ */
+class Team {
+  String teamNumber;
+  String teamName;
+  String schoolName;
+  Team(this.teamNumber, this.teamName, this.schoolName);
+  Team.fromSnapshot(DocumentSnapshot snapshot)
+      : teamNumber = snapshot.documentID,
+        teamName = snapshot['team_name'],
+        schoolName = snapshot['school_name'];
+  bool operator ==(Object other) =>
+      other is Team && other.teamNumber == teamNumber;
+  int get hashCode => teamNumber.hashCode;
+}
+
+/*
+ * Class that represents the data we're storing for every scouted match in Firecloud.
+ */
+class ScoutResult {
+  bool autoLine = false;
+  int autoPortBottom = 0;
+
+  ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
+      : autoLine =
+            snapshot['auto_line'] == null ? false : snapshot['auto_line'],
+        autoPortBottom = snapshot['auto_port_bottom'] == null
+            ? 0
+            : snapshot['auto_port_bottom'];
+}
+
+// Unused class, keeping around for now.
 class Match {
   String blue1;
   String blue2;
@@ -28,18 +75,6 @@ class Match {
         red1 = snapshot['red1'],
         red2 = snapshot['red2'],
         red3 = snapshot['red3'];
-}
-
-class ScoutResult {
-  bool autoLine = false;
-  int autoPortBottom = 0;
-
-  ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
-      : autoLine =
-            snapshot['auto_line'] == null ? false : snapshot['auto_line'],
-        autoPortBottom = snapshot['auto_port_bottom'] == null
-            ? 0
-            : snapshot['auto_port_bottom'];
 }
 
 class FRC4003ScoutApp extends StatelessWidget {
@@ -76,19 +111,31 @@ class ScoutHomePage extends StatefulWidget {
 
 class _ScoutHomePageState extends State<ScoutHomePage> {
   Student _studentObj;
-  String _team;
-  String _matchName;
+  Team _teamObj;
+  String _matchNumber;
+  bool _matchBegun;
 
   /* 
     * JJB: 
     * Part of me says this should be selectable and part of me says this might
     * as well be baked into the app to make really sure everybody is running
     * the proper version and nobody can possibly get confused and select the
-    * wrong week.context
+    * wrong week.
     * It's not lazy programming.  I thought this through. 
     */
-  String _compName = 'stjoe';
+  String _compName = 'misjo';
   String _compYear = '2020';
+
+  @override
+  void initState() {
+    super.initState();
+    _matchNumber = "1";
+    _matchBegun = false;
+  }
+
+  String getCurrDocumentID() {
+    return "$_compYear:${_teamObj.teamNumber}:${_studentObj.key}:$_matchNumber";
+  }
 
   Widget buildStudentSelector(BuildContext context) {
     return StreamBuilder(
@@ -104,16 +151,20 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
               DropdownButton<Student>(
                 value: _studentObj,
                 onChanged: (Student v) {
+                  /*
                   debugPrint("Student key set to ${v.key}");
                   debugPrint("Student name set to ${v.name}");
+                  */
                   setState(() {
                     _studentObj = v;
                   });
                 },
                 items:
                     snapshot.data.documents.map<DropdownMenuItem<Student>>((d) {
+                  /*
                   debugPrint("Student documentID dump: ${d.documentID}");
                   debugPrint("Student name dump: ${d['name']}");
+                  */
                   return DropdownMenuItem<Student>(
                     value: Student(d.documentID, d['name']),
                     child: Text(d['name']),
@@ -125,7 +176,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         });
   }
 
-  Widget buildMatchSelector(BuildContext context) {
+  Widget buildTeamSelector(BuildContext context) {
     return StreamBuilder(
         stream: Firestore.instance
             .collection('competitions')
@@ -139,20 +190,26 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: <Widget>[
-              Text('Which match?'),
-              DropdownButton(
-                value: _matchName,
-                icon: Icon(Icons.map),
-                onChanged: (String v) {
-                  debugPrint("Match name set to $v");
+              Text('Who are they?'),
+              DropdownButton<Team>(
+                value: _teamObj,
+                onChanged: (Team v) async {
                   setState(() {
-                    _matchName = v;
+                    _teamObj = v;
+                  });
+                  bool mb =
+                      await checkResultsDocumentExists(getCurrDocumentID());
+                  setState(() {
+                    _matchBegun = mb;
                   });
                 },
-                items:
-                    snapshot.data.documents.map<DropdownMenuItem<String>>((d) {
-                  return DropdownMenuItem<String>(
-                    value: d.documentID,
+                items: snapshot.data.documents.map<DropdownMenuItem<Team>>((d) {
+                  /*
+                  debugPrint("Team documentID dump: ${d.documentID}");
+                  debugPrint("Team name dump: ${d['team_name']}");
+                  */
+                  return DropdownMenuItem<Team>(
+                    value: Team(d.documentID, d['team_name'], d['school_name']),
                     child: Text(d.documentID),
                   );
                 }).toList(),
@@ -162,70 +219,33 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         });
   }
 
-  Widget buildTeamDropdown(BuildContext context, Match data) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: <Widget>[
-        Text('Who are they?'),
-        DropdownButton(
-          value: _team,
-          icon: Icon(Icons.device_hub),
-          onChanged: (String v) {
-            setState(() {
-              _team = v;
-            });
-            debugPrint("Team set to $v");
-          },
-          items: <DropdownMenuItem<String>>[
-            DropdownMenuItem<String>(
-              value: data.blue1,
-              child: Text(data.blue1),
-            ),
-            DropdownMenuItem<String>(
-              value: data.blue2,
-              child: Text(data.blue2),
-            ),
-            DropdownMenuItem<String>(
-              value: data.blue3,
-              child: Text(data.blue3),
-            ),
-            DropdownMenuItem<String>(
-              value: data.red1,
-              child: Text(data.red1),
-            ),
-            DropdownMenuItem<String>(
-              value: data.red2,
-              child: Text(data.red2),
-            ),
-            DropdownMenuItem<String>(
-              value: data.red3,
-              child: Text(data.red3),
-            ),
-          ],
-        ),
-      ],
-    );
+  Widget buildTeamDisplay(BuildContext context) {
+    if (_teamObj != null && _teamObj.teamName.length > 0) {
+      return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[Text('You have selected ${_teamObj.teamName}')]);
+    }
+    return SizedBox.shrink();
   }
 
-  Widget buildTeamStream(BuildContext context) {
-    if (_matchName == null || _matchName.length == 0) {
-      return LinearProgressIndicator();
+  Widget buildStartButton(BuildContext context) {
+    if (_teamObj != null && _teamObj.teamName.length > 0) {
+      return Visibility(
+          visible: _matchBegun == false,
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                RaisedButton(
+                    child: Text('Begin scouting!'),
+                    onPressed: () {
+                      setState(() {
+                        _matchBegun = true;
+                      });
+                      createScoutResultDocument();
+                    })
+              ]));
     }
-    debugPrint("Loading teams for $_matchName");
-    return StreamBuilder(
-      stream: Firestore.instance
-          .collection('competitions')
-          .document(_compYear)
-          .collection(_compName)
-          .document(_matchName)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return LinearProgressIndicator();
-        }
-        return buildTeamDropdown(context, Match.fromSnapshot(snapshot.data));
-      },
-    );
+    return SizedBox.shrink();
   }
 
   Widget buildAutoLine(BuildContext context, ScoutResult sr) {
@@ -241,7 +261,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             setState(() {
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+                  .document(getCurrDocumentID())
                   .updateData({'auto_line': b});
             });
           },
@@ -255,6 +275,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     if (_studentObj == null) {
       return Text('select student first.');
     }
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
@@ -264,7 +287,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             onPressed: () {
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+                  .document(getCurrDocumentID())
                   .updateData({'auto_port_bottom': --sr.autoPortBottom});
             }),
         Text(sr.autoPortBottom.toString()),
@@ -273,7 +296,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             onPressed: () {
               Firestore.instance
                   .collection('scoutresults')
-                  .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+                  .document(getCurrDocumentID())
                   .updateData({'auto_port_bottom': ++sr.autoPortBottom});
             }),
       ],
@@ -290,30 +313,55 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
-  Widget build2020ScoutingStream(BuildContext context) {
-    if (_matchName == null ||
-        _matchName.length == 0 ||
-        _team == null ||
-        _team.length == 0 ||
-        _studentObj == null) {
-      return CircularProgressIndicator();
+  Future<bool> checkResultsDocumentExists(String docID) async {
+    final snap = await Firestore.instance
+        .collection('scoutresults')
+        .document(getCurrDocumentID())
+        .get();
+    return snap.exists;
+  }
+
+  void createScoutResultDocument() async {
+    // Prefixing an async function call with await forces it to await for it to finish.
+    // This returns us to a synchronous programming model.
+    final snap = await Firestore.instance
+        .collection('scoutresults')
+        .document(getCurrDocumentID())
+        .get();
+    if (snap.exists) {
+      return; // Nothing needs to be done.
     }
-    // Bootstrap the DB with default data to work with
-    if (_studentObj.name != null) {
-      Firestore.instance
-          .collection('scoutresults')
-          .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
-          .setData({'student_name': _studentObj.name}, merge: true);
+
+    var d = {
+      'student_name': _studentObj.name,
+      'auto_line': false,
+      'auto_port_bottom': 0
+    };
+    Firestore.instance
+        .collection('scoutresults')
+        .document(getCurrDocumentID())
+        .setData(d);
+  }
+
+  Widget build2020ScoutingStream(BuildContext context) {
+    if (_matchNumber == null ||
+        _matchNumber.length == 0 ||
+        _teamObj == null ||
+        _teamObj.teamNumber.length == 0 ||
+        _studentObj == null) {
+      return SizedBox.shrink();
     }
 
     return StreamBuilder(
         stream: Firestore.instance
             .collection('scoutresults')
-            .document("$_compYear:$_matchName:$_team:${_studentObj.key}")
+            .document(getCurrDocumentID())
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData || snapshot.data == null) {
-            return LinearProgressIndicator();
+          if (!snapshot.hasData ||
+              snapshot.data == null ||
+              !snapshot.data.exists) {
+            return SizedBox.shrink();
           }
           return build2020ScoutingWidgets(
               context, ScoutResult.fromSnapshot(snapshot.data));
@@ -326,6 +374,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     // change that warrants a rebuild of the UI.
     // It's like magic.  OoOoOo!
     return Scaffold(
+      drawer: buildAppDrawer(context),
       appBar: AppBar(
         title: Text(widget.title),
       ),
@@ -335,8 +384,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             buildStudentSelector(context),
-            buildMatchSelector(context),
-            buildTeamStream(context),
+            buildTeamSelector(context),
+            buildTeamDisplay(context),
+            buildStartButton(context),
             build2020ScoutingStream(context),
           ],
         ),
