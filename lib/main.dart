@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'drawer.dart';
 import 'results.dart';
@@ -137,7 +138,17 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     return "$_compYear:$_compName:${_teamObj.teamNumber}:${_studentObj.key}:$_matchNumber";
   }
 
+  void printCurrUser() async {
+    FirebaseUser user = await FirebaseAuth.instance.currentUser();
+    if (user == null) {
+      debugPrint("You are not currently authenticated.");
+    } else {
+      debugPrint("Current user: ${user.uid}");
+    }
+  }
+
   Widget buildStudentSelector(BuildContext context) {
+    printCurrUser();
     return StreamBuilder(
         stream: Firestore.instance.collection('students').snapshots(),
         builder: (context, snapshot) {

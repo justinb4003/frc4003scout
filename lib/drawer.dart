@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'results.dart';
+import 'login.dart';
 
   Widget buildAppDrawer(BuildContext context) {
     return Drawer(
@@ -22,6 +23,13 @@ import 'results.dart';
             title: Text('Scout!'),
             onTap: () {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ScoutHomePage(title: 'Trisonics Scouting')));
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.data_usage),
+            title: Text('Login'),
+            onTap: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage(title: 'View Results')));
             },
           ),
           ListTile(
