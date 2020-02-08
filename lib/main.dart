@@ -47,16 +47,65 @@ class Team {
 /*
  * Class that represents the data we're storing for every scouted match in Firecloud.
  */
+enum HangingOption {
+  none,
+  attempt,
+  success,
+}
+
 class ScoutResult {
   bool autoLine = false;
   int autoPortBottom = 0;
+  int autoPortTop = 0;
+  bool controlPanel = false;
+  int autoPortInner = 0;
+  bool controlPanelRotation = false;
+  bool groundPickup = false;
+  bool humanLoadingPort = false;
+  bool underControlPanel = false;
+  int teleopPortInner = 0;
+  int teleopPortTop = 0;
+  int teleopPortBottom = 0;
+  bool canBuddyHang = false;
 
   ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
       : autoLine =
             snapshot['auto_line'] == null ? false : snapshot['auto_line'],
         autoPortBottom = snapshot['auto_port_bottom'] == null
             ? 0
-            : snapshot['auto_port_bottom'];
+            : snapshot['auto_port_bottom'],
+        autoPortTop =
+            snapshot['auto_port_top'] == null ? 0 : snapshot['auto_port_top'],
+        controlPanel = snapshot['control_panel'] == null
+            ? false
+            : snapshot['control_panel'],
+        autoPortInner = snapshot['auto_port_inner'] == null
+            ? 0
+            : snapshot['auto_port_bottom'],
+        controlPanelRotation = snapshot['control_panel_rotation'] == null
+            ? false
+            : snapshot['control_panel_rotation'],
+        groundPickup = snapshot['ground_pickup'] == null
+            ? false
+            : snapshot['ground_pickup'],
+        humanLoadingPort = snapshot['human_loading_port'] == null
+            ? false
+            : snapshot['human_loading_port'],
+        underControlPanel = snapshot['goes_under_control_panel'] == null
+            ? false
+            : snapshot['goes_under_control_panel'],
+        teleopPortInner = snapshot['teleop_port_inner'] == null
+            ? 0
+            : snapshot['teleop_port_inner'],
+        teleopPortTop = snapshot['teleop_port_inner'] == null
+            ? 0
+            : snapshot['teleop_port_inner'],
+        teleopPortBottom = snapshot['teleop_port_bottom'] == null
+            ? 0
+            : snapshot['teleop_port_bottom'],
+        canBuddyHang = snapshot['can_buddy_hang'] == null
+            ? false
+            : snapshot['can_buddy_hang'];
 }
 
 // Unused class, keeping around for now.
@@ -145,7 +194,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             return LinearProgressIndicator();
           }
           return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text('Who are you?'),
               DropdownButton<Student>(
@@ -182,13 +231,14 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
             .collection('competitions')
             .document(_compYear)
             .collection(_compName)
+            .orderBy('sort_order')
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return LinearProgressIndicator();
           }
           return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: <Widget>[
               Text('Who are they?'),
               DropdownButton<Team>(
@@ -253,9 +303,9 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       return Text('select student first.');
     }
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Text('Moved off auto line?'),
+        Text('Moved completely off auto line?'),
         Switch(
           onChanged: (bool b) {
             setState(() {
@@ -271,6 +321,187 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
+  Widget buildControlPanel(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Control Panel To Correct Color'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'control_panel': b});
+            });
+          },
+          value: sr.controlPanel,
+        )
+      ],
+    );
+  }
+
+  Widget buildControlPanelRotation(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Control Panel Rotation Count'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'control_panel_rotation': b});
+            });
+          },
+          value: sr.controlPanel,
+        )
+      ],
+    );
+  }
+
+  Widget buildGroundPickup(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Ground Pickup Capable'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'ground_pickup': b});
+            });
+          },
+          value: sr.groundPickup,
+        )
+      ],
+    );
+  }
+
+  Widget buildHumanLoadingPort(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Human Loading Port'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'human_loading_port': b});
+            });
+          },
+          value: sr.humanLoadingPort,
+        )
+      ],
+    );
+  }
+
+  Widget buildUnderControlPanel(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Goes Under Control Panel'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'goes_under_control_panel': b});
+            });
+          },
+          value: sr.underControlPanel,
+        )
+      ],
+    );
+  }
+
+  Widget buildAutoPortInner(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Auto inner port score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'auto_port_inner': --sr.autoPortInner});
+            }),
+        Text(sr.autoPortInner.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'auto_port_inner': ++sr.autoPortInner});
+            }),
+      ],
+    );
+  }
+
+  Widget buildAutoPortTop(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Auto top port score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'auto_port_top': --sr.autoPortTop});
+            }),
+        Text(sr.autoPortTop.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'auto_port_top': ++sr.autoPortTop});
+            }),
+      ],
+    );
+  }
+
   Widget buildAutoPortBottom(BuildContext context, ScoutResult sr) {
     if (_studentObj == null) {
       return Text('select student first.');
@@ -279,7 +510,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     // typical post increment that you see.  We're doing ++c not c++.
     // There is a difference.
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.max,
       children: <Widget>[
         Text('Auto bottom port score'),
         IconButton(
@@ -303,12 +535,154 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
+  Widget buildTeleopPortInner(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Teleop Inner Port Score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_inner': --sr.teleopPortInner});
+            }),
+        Text(sr.teleopPortInner.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_inner': ++sr.teleopPortInner});
+            }),
+      ],
+    );
+  }
+
+  Widget buildTeleopPortTop(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Teleop Top Port Score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_top': --sr.teleopPortTop});
+            }),
+        Text(sr.teleopPortTop.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_top': ++sr.teleopPortTop});
+            }),
+      ],
+    );
+  }
+
+  Widget buildTeleopPortBottom(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    // JJB: Note the pre-increment version of ++ and -- below; they're not the
+    // typical post increment that you see.  We're doing ++c not c++.
+    // There is a difference.
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Teleop Bottom Port Score'),
+        IconButton(
+            icon: Icon(Icons.remove),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_bottom': --sr.teleopPortBottom});
+            }),
+        Text(sr.teleopPortBottom.toString()),
+        IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'teleop_port_bottom': ++sr.teleopPortBottom});
+            }),
+      ],
+    );
+  }
+
+  Widget buildBuddyHang(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text('Can Buddy Hang'),
+        Switch(
+          onChanged: (bool b) {
+            setState(() {
+              Firestore.instance
+                  .collection('scoutresults')
+                  .document(getCurrDocumentID())
+                  .updateData({'can_buddy_hang': b});
+            });
+          },
+          value: sr.canBuddyHang,
+        )
+      ],
+    );
+  }
+
   Widget build2020ScoutingWidgets(BuildContext context, ScoutResult sr) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.max,
       children: <Widget>[
+        SizedBox(height: 30),
+        Text('Autonomous', style: TextStyle(fontWeight: FontWeight.bold)),
         buildAutoLine(context, sr),
+        buildAutoPortInner(context, sr),
+        buildAutoPortTop(context, sr),
         buildAutoPortBottom(context, sr),
+        SizedBox(height: 30),
+        Text('Teleop', style: TextStyle(fontWeight: FontWeight.bold)),
+        buildTeleopPortInner(context, sr),
+        buildTeleopPortTop(context, sr),
+        buildTeleopPortBottom(context, sr),
+        buildUnderControlPanel(context, sr),
+        buildControlPanelRotation(context, sr),
+        buildControlPanel(context, sr),
+        buildGroundPickup(context, sr),
+        buildHumanLoadingPort(context, sr),
+        SizedBox(height: 30),
+        Text('Endgame', style: TextStyle(fontWeight: FontWeight.bold)),
+        //buildCanHang(context, sr),
+        //buildMoveOnHangBar(context, sr),
+        buildBuddyHang(context, sr),
       ],
     );
   }
@@ -378,10 +752,11 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
+      body: Container(
+        margin: EdgeInsets.fromLTRB(16, 32, 16, 32),
+        child: ListView(
+          //mainAxisAlignment: MainAxisAlignment.start,
+          //crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             buildStudentSelector(context),
             buildTeamSelector(context),
