@@ -30,6 +30,7 @@ class Student {
 /*
  * Container class that holds data on a team.
  */
+
 class Team {
   String teamNumber;
   String teamName;
@@ -47,18 +48,13 @@ class Team {
 /*
  * Class that represents the data we're storing for every scouted match in Firecloud.
  */
-enum HangingOption {
-  none,
-  attempt,
-  success,
-}
 
 class ScoutResult {
   bool autoLine = false;
-  int autoPortBottom = 0;
-  int autoPortTop = 0;
-  bool controlPanel = false;
   int autoPortInner = 0;
+  int autoPortTop = 0;
+  int autoPortBottom = 0;
+  bool controlPanel = false;
   bool controlPanelRotation = false;
   bool groundPickup = false;
   bool humanLoadingPort = false;
@@ -71,17 +67,17 @@ class ScoutResult {
   ScoutResult.fromSnapshot(DocumentSnapshot snapshot)
       : autoLine =
             snapshot['auto_line'] == null ? false : snapshot['auto_line'],
+        autoPortInner = snapshot['auto_port_inner'] == null
+            ? 0
+            : snapshot['auto_port_inner'],
+        autoPortTop =
+            snapshot['auto_port_top'] == null ? 0 : snapshot['auto_port_top'],
         autoPortBottom = snapshot['auto_port_bottom'] == null
             ? 0
             : snapshot['auto_port_bottom'],
-        autoPortTop =
-            snapshot['auto_port_top'] == null ? 0 : snapshot['auto_port_top'],
         controlPanel = snapshot['control_panel'] == null
             ? false
             : snapshot['control_panel'],
-        autoPortInner = snapshot['auto_port_inner'] == null
-            ? 0
-            : snapshot['auto_port_bottom'],
         controlPanelRotation = snapshot['control_panel_rotation'] == null
             ? false
             : snapshot['control_panel_rotation'],
@@ -97,9 +93,9 @@ class ScoutResult {
         teleopPortInner = snapshot['teleop_port_inner'] == null
             ? 0
             : snapshot['teleop_port_inner'],
-        teleopPortTop = snapshot['teleop_port_inner'] == null
+        teleopPortTop = snapshot['teleop_port_top'] == null
             ? 0
-            : snapshot['teleop_port_inner'],
+            : snapshot['teleop_port_top'],
         teleopPortBottom = snapshot['teleop_port_bottom'] == null
             ? 0
             : snapshot['teleop_port_bottom'],
@@ -163,6 +159,8 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
   Team _teamObj;
   String _matchNumber;
   bool _matchBegun;
+  String _optionHang;
+  String _optionMove;
 
   /* 
     * JJB: 
@@ -361,7 +359,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
                   .updateData({'control_panel_rotation': b});
             });
           },
-          value: sr.controlPanel,
+          value: sr.controlPanelRotation,
         )
       ],
     );
@@ -535,6 +533,26 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     );
   }
 
+  Widget buildCommentBar(BuildContext context, ScoutResult sr) {
+    if (_studentObj == null) {
+      return Text('select student first.');
+    }
+
+    return Row(
+      children: <Widget>[
+        new Flexible(
+          child: new TextField(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Comments',
+            ),
+            style: Theme.of(context).textTheme.body1,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget buildTeleopPortInner(BuildContext context, ScoutResult sr) {
     if (_studentObj == null) {
       return Text('select student first.');
@@ -641,7 +659,7 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
-        Text('Can Buddy Hang'),
+        Text('Can Buddy Climb'),
         Switch(
           onChanged: (bool b) {
             setState(() {
@@ -655,6 +673,84 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         )
       ],
     );
+  }
+
+  Widget buildCanHang(BuildContext context, ScoutResult sr) {
+    return StreamBuilder(
+        stream: Firestore.instance.collection('dropdownoptions').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return LinearProgressIndicator();
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text('Can Hang?'),
+              DropdownButton<String>(
+                value: _optionHang,
+                onChanged: (String v) {
+                  /*
+                  debugPrint("Student key set to ${v.key}");
+                  debugPrint("Student name set to ${v.name}");
+                  */
+                  setState(() {
+                    _optionHang = v;
+                  });
+                },
+                items:
+                    snapshot.data.documents.map<DropdownMenuItem<String>>((d) {
+                  /*
+                  debugPrint("Student documentID dump: ${d.documentID}");
+                  debugPrint("Student name dump: ${d['name']}");
+                  */
+                  return DropdownMenuItem<String>(
+                    value: d['option'],
+                    child: Text(d['option']),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        });
+  }
+
+  Widget buildCanMove(BuildContext context, ScoutResult sr) {
+    return StreamBuilder(
+        stream: Firestore.instance.collection('dropdownoptions').snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return LinearProgressIndicator();
+          }
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Text('Can Move On Bar?'),
+              DropdownButton<String>(
+                value: _optionMove,
+                onChanged: (String v) {
+                  /*
+                  debugPrint("Student key set to ${v.key}");
+                  debugPrint("Student name set to ${v.name}");
+                  */
+                  setState(() {
+                    _optionMove = v;
+                  });
+                },
+                items:
+                    snapshot.data.documents.map<DropdownMenuItem<String>>((d) {
+                  /*
+                  debugPrint("Student documentID dump: ${d.documentID}");
+                  debugPrint("Student name dump: ${d['name']}");
+                  */
+                  return DropdownMenuItem<String>(
+                    value: d['option'],
+                    child: Text(d['option']),
+                  );
+                }).toList(),
+              ),
+            ],
+          );
+        });
   }
 
   Widget build2020ScoutingWidgets(BuildContext context, ScoutResult sr) {
@@ -680,9 +776,10 @@ class _ScoutHomePageState extends State<ScoutHomePage> {
         buildHumanLoadingPort(context, sr),
         SizedBox(height: 30),
         Text('Endgame', style: TextStyle(fontWeight: FontWeight.bold)),
-        //buildCanHang(context, sr),
-        //buildMoveOnHangBar(context, sr),
+        buildCanHang(context, sr),
+        buildCanMove(context, sr),
         buildBuddyHang(context, sr),
+        buildCommentBar(context, sr),
       ],
     );
   }
